@@ -11,6 +11,9 @@ NTRIALS = 10000  # Number of trials to run
 SCORE_CURRENT = 0  # Score for squares played by the current player
 SCORE_OTHER = 0  # Score for squares played by the other player
 
+# Map for constants and strings
+CONSTANTS_STRING_MAP = {EMPTY: " ", PLAYERX: "X", PLAYERO: "O"}
+
 
 class GameDriver:
     class TTTBoard:
@@ -180,10 +183,109 @@ class GameDriver:
             # Switch current player
             player = board.switch_player(player)
 
-    def mc_update_scores(self, scores, board, player):
+    def mc_update_scores(self, scores, board: TTTBoard, player):
+        '''
+            This function takes a grid of scores (a list of lists) with the same dimensions as the Tic-Tac-Toe board
+             a board from a completed game, and which player the machine player is.
+            The function should score the completed board and update the scores grid.
+            As the function updates the scores grid directly, it does not return anything,
+            '''
+        # After mc_trial, we know there are 3 cases: the winner is "X", the winner is "Y" or the game is Tie.
+
+        winner = board.check_win()
+
+        # 1. If the result is Draw, just pass the function
+        if winner == DRAW:
+            pass
+
+        # 2. If computer wins, increment all computer's moves and decrement all your component's moves
+        elif winner == player:
+            for row in range(board.get_dim()):
+                for col in range(board.get_dim()):
+                    current_square = board.square(row, col)
+                    if current_square == player:
+                        current_square += SCORE_CURRENT
+                    elif current_square != EMPTY and current_square != player:
+                        current_square -= SCORE_OTHER
+
+        # 3. If the player wins, increment all player's moves and decrement all computer's moves
+        else:
+            for row in range(board.get_dim()):
+                for col in range(board.get_dim()):
+                    current_square = board.square(row, col)
+                    if current_square == player:
+                        current_square -= SCORE_CURRENT
+                    elif current_square == EMPTY:
+                        pass
+                    else:
+                        current_square += SCORE_OTHER
+
+    def get_best_move(self, board: TTTBoard, scores):
+        '''
+            This function takes a current board and a grid of scores.
+            The function should find all of the empty squares with the maximum score
+             and randomly return one of them as a (row, column) tuple.
+             It is an error to call this function with a board that has no empty squares
+            (there is no possible next move), so your function may do whatever it wants in that case.
+            The case where the board is full will not be tested.
+            '''
+
+        # Based on the scores which you generated in mc_update_scores(), you can determine which square in the empty squares has the highest score.
+
+        # If there is no empty square, skip this function
+        if not board.get_empty_squares():
+            pass
+
+        # Otherwise, generate a dictionary with key is the empty square in the empty squares list and value is its score in the scores
+        empty_squares_list = board.get_empty_squares()
+        empty_squares_scores_dict = {}
+        for square in empty_squares_list:
+            empty_squares_scores_dict[square] = scores[square[0]][square[1]]
+
+        # Find the max value in the values of the dictionary
+        max_value = max(empty_squares_scores_dict.values())
+
+        # Find all the keys corresponding to that max value
+        max_scores_squares = [k for k, v in empty_squares_scores_dict.items() if v == max_value]
+
+        # If there are more than one square with highest scores, randomly choose one
+        return random.choice(max_scores_squares)
+
+    def mc_move(self, board: TTTBoard, player, trials):
+        '''
+            This function takes a current board, which player the machine player is, and the number of trials to run.
+            The function should use the Monte Carlo simulation described above to return
+            a move for the machine player in the form of a (row, column) tuple.
+            Be sure to use the other functions you have written!
+            '''
+        # Create an empty board for the list of empty squares
+        empty_board = board.clone()
+
+        # Create a clone board and list of scores for finding the best move according to Monte Carlo
+        scores_list = []
+        clone_board = board.clone()
+        for line in range(board.get_dim()):
+            scores_list.append([0] * board.get_dim())
+
+        # Run for loop in the times of given trials, play the game with the function mc_trials() and keep track the scores
+        # with the function update_scores(). After the loop, return the scores of all the squares as they are all empty.
+        for t in range(trials):
+            self.mc_trial(clone_board, player)
+            self.mc_update_scores(scores_list, clone_board, player)
+
+            # reset the clone board after each turn
+            clone_board = empty_board.clone()
+
+        # With the scores list, find the square with the highest score
+        best_square = self.get_best_move(clone_board, scores_list)
+        return best_square
 
 
 if __name__ == '__main__':
     l = [(1, 2), (3, 4), (5, 6), 9]
     rm = random.choice(l)
-    print(rm)
+    # print(rm)
+    l = []
+    for i in range(10):
+        l.append([0] * 10)
+    print(l)
